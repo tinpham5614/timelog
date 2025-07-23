@@ -14,9 +14,22 @@ Timelog is a command-line application designed to help users track the time they
 - View total time spent on tasks
 
 ## Installation
-1. Clone the repository
-2. Install dependencies
-3. Run the application
+1. Clone the repository and redirect to the project directory
+   ```
+    git clone https://github.com/tinpham5614/timelog.git
+    cd timelog
+   ```
+2. Create a virtual environment (optional but recommended)
+    ```
+    python -m venv .venv
+    source .venv/bin/activate # macOS/Linux
+    source .venv\Scripts\activate # Windows
+    ```
+3. Install dependencies
+    `pip install -e .` 
+
+    Wait for the installation to complete. This will set up the timelog app and its dependencies.
+    Congratulations! You have successfully set up the timelog app.
 
 ## Usage
 - Start a new time entry: `timelog start`
