@@ -16,7 +16,7 @@ from helpers import (
 app = typer.Typer()
 init_db()
 
-PROJECTS = {1: "KTS App", 2: "Timeclock App", 3: "Music Studio"}
+PROJECTS = {1: "Project 1", 2: "Project 2", 3: "Project 3"}
 
 
 @app.command()
