@@ -10,8 +10,10 @@ Timelog is a command-line application designed to help users track the time they
 ## Features
 - Start a new time entry
 - Stop the current time entry
-- View all time entries
-- View total time spent on tasks
+- View the current time entry
+- View all time entries for today
+- [Incoming] Export time entries to a CSV file command
+- [Incoming] Automation export the summary of time entries to a CSV file at the end of the day
 
 ## Installation
 1. Clone the repository and redirect to the project directory
