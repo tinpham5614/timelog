@@ -88,30 +88,6 @@ def start(
 
 
 @app.command()
-def status():
-    """Show the current session."""
-    db = SessionLocal()
-    try:
-        session = db.query(TimeSession).filter(TimeSession.end_time == None).first()
-
-        if session:
-            duration_str = calculate_duration(
-                start_time=session.start_time, end_time=session.end_time or None
-            )
-            start_display = format_datetime(to_local_time(session.start_time))
-
-            print("------------------------------------")
-            print(f"📖 [bold][{session.project}] - {session.task}")
-            print(f"🕒 Start time: {start_display}")
-            print(f"🕒 Duration : [green]{duration_str}")
-
-        else:
-            print("ℹ️ [yellow] No active session found.")
-    finally:
-        db.close()
-
-
-@app.command()
 def stop():
     """Stop the currently active time tracking session."""
     db = SessionLocal()
@@ -145,6 +121,30 @@ def stop():
         print(f"❌ Error stopping session: {e}")
         db.rollback()
         raise typer.Exit(code=1)
+    finally:
+        db.close()
+
+
+@app.command()
+def current():
+    """Show the current session."""
+    db = SessionLocal()
+    try:
+        session = db.query(TimeSession).filter(TimeSession.end_time == None).first()
+
+        if session:
+            duration_str = calculate_duration(
+                start_time=session.start_time, end_time=session.end_time or None
+            )
+            start_display = format_datetime(to_local_time(session.start_time))
+
+            print("------------------------------------")
+            print(f"📖 [bold][{session.project}] - {session.task}")
+            print(f"🕒 Start time: {start_display}")
+            print(f"🕒 Duration : [green]{duration_str}")
+
+        else:
+            print("ℹ️ [yellow] No active session found.")
     finally:
         db.close()
 
