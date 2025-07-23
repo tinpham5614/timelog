@@ -40,10 +40,8 @@ def start(
                     project = PROJECTS[selection]
                     break
                 else:
-                    print("------------------------------------")
                     print(f"[red]❌ Invalid choice. Please enter 1-{len(PROJECTS)}")
             except ValueError:
-                print("------------------------------------")
                 print("[red]❌ Please enter a number")
 
     # Task input
@@ -57,7 +55,6 @@ def start(
             db.query(TimeSession).filter(TimeSession.end_time == None).first()
         )
         if active_session:
-            print("------------------------------------")
             print(
                 f"[yellow]⚠️  Active session: {active_session.project} - {active_session.task}."
             )
@@ -76,7 +73,6 @@ def start(
         db.refresh(new_session)
 
         start_display = format_datetime(to_local_time(new_session.start_time))
-        print("------------------------------------")
         print(f"✅ Started session: [bold]{project} - {task}")
         print(f"🕒 Start time: {start_display}")
     except Exception as e:
@@ -113,7 +109,6 @@ def stop():
         start_display = format_datetime(to_local_time(session.start_time))
         end_display = format_datetime(to_local_time(session.end_time))
 
-        print("------------------------------------")
         print(f"🛑 Stopped session: [bold][{session.project}] - {session.task}")
         print(f"⏱️ Start time: {start_display} | End time: {end_display}")
         print(f"⏱️ Duration: [green]{duration_str}")
@@ -138,7 +133,6 @@ def current():
             )
             start_display = format_datetime(to_local_time(session.start_time))
 
-            print("------------------------------------")
             print(f"📖 [bold][{session.project}] - {session.task}")
             print(f"🕒 Start time: {start_display}")
             print(f"🕒 Duration : [green]{duration_str}")
@@ -161,10 +155,7 @@ def summary():
         )
 
         sessions = (
-            db.query(TimeSession)
-            .filter(TimeSession.start_time >= today_utc)
-            .order_by(TimeSession.start_time.desc())
-            .all()
+            db.query(TimeSession).filter(TimeSession.start_time >= today_utc).all()
         )
 
         if not sessions:
@@ -182,16 +173,53 @@ def summary():
 
             start_display = format_datetime(to_local_time(session.start_time))
             end_display = (
-                "STILL ACTIVE"
+                "⏳[green]ACTIVE"
                 if not session.end_time
                 else format_time(to_local_time(session.end_time).time())
             )
 
             print(
+                f"{session.id} | "
                 f"{start_display} - {end_display} | "
                 f"[{session.project}] - {session.task} | "
                 f"{duration_str}",
             )
+    finally:
+        db.close()
+
+
+@app.command()
+def remove(
+    session_id: int = typer.Argument(..., help="ID of session to delete"),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        prompt="Are you sure you want to delete this session?",
+        help="Skip confirmation prompt",
+    ),
+):
+    db = SessionLocal()
+    try:
+        session = db.query(TimeSession).get(session_id)
+        if not session:
+            print(f"[red]❌ Session {session_id} not found")
+            raise typer.Exit(code=1)
+
+        if force or typer.confirm(
+            print(
+                f"Deleting session: {session_id} ({session.project} - {session.task})"
+            )
+        ):
+            db.delete(session)
+            db.commit()
+            print(f"✅ [green]Deleted session {session_id}")
+        else:
+            print("🟡 Deletion cancelled")
+    except Exception as e:
+        db.rollback()
+        print(f"❌ [red]Error deleting session: {e}")
+        raise typer.Exit(code=1)
     finally:
         db.close()
 
