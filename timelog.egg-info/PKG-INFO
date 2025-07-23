@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: timelog
+Version: 0.1
+Requires-Dist: typer
+Requires-Dist: sqlalchemy
+Requires-Dist: pytz
+Dynamic: requires-dist
