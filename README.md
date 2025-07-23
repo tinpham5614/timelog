@@ -19,14 +19,21 @@ Timelog is a command-line application designed to help users track the time they
     git clone https://github.com/tinpham5614/timelog.git
     cd timelog
    ```
-2. Create a virtual environment (optional but recommended)
+2. Create a virtual environment
+   - For macOS/Linux:
     ```
     python -m venv .venv
     source .venv/bin/activate # macOS/Linux
-    source .venv\Scripts\activate # Windows
     ```
-3. Install dependencies
-    `pip install -e .` 
+   - For Windows:
+    ```
+    python -m venv .venv
+    .venv\Scripts\activate
+    ```
+3. Install dependencies (editable mode)
+    ```
+    pip install -e .
+    ```
 
     Wait for the installation to complete. This will set up the timelog app and its dependencies.
     Congratulations! You have successfully set up the timelog app.
