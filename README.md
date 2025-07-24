@@ -17,7 +17,7 @@ Timelog is a command-line application designed to help users track the time they
 ![alt text](image-4.png)
 
 ### Stop the current time entry
-![alt text](image-7.png)
+![alt text](image.png)
 
 ### View all time entries for today
 ![alt text](image-6.png)
