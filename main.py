@@ -201,7 +201,7 @@ def remove(
 ):
     db = SessionLocal()
     try:
-        session = db.query(TimeSession).get(session_id)
+        session = db.get(TimeSession, session_id)
         if not session:
             print(f"[red]❌ Session {session_id} not found")
             raise typer.Exit(code=1)
