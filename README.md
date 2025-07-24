@@ -4,8 +4,23 @@
 Timelog is a command-line application designed to help users track the time they spend on various tasks. It provides a simple interface to start and stop time entries, as well as to view summaries of logged time.
 
 ## Use Cases
-- Problem: You need to track how much time you spend on different tasks.
+- Problem: 
+  - You need to track how much time you spend on different tasks.
+  - It takes too long to manually log time or use complex software.
 - Solution: Use the timelog app to start and stop time entries, and view summaries of your logged time with simple commands.
+
+## Demo
+### Start a new time entry
+![alt text](image-3.png)
+
+### Current time entry
+![alt text](image-4.png)
+
+### Stop the current time entry
+![alt text](image-7.png)
+
+### View all time entries for today
+![alt text](image-6.png)
 
 ## Features
 - Start a new time entry
