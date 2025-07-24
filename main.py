@@ -149,6 +149,10 @@ def current():
 
         else:
             print("ℹ️ [yellow] No active session found.")
+    except Exception as e:
+        print(f"❌ [red]Error fetching current session: {e}")
+        db.rollback()
+        raise typer.Exit(code=1)
     finally:
         db.close()
 
