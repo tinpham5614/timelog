@@ -4,6 +4,7 @@ from typing import Optional
 
 import typer
 from rich import print
+import csv
 
 from db import init_db, SessionLocal, TimeSession
 from helpers import (
@@ -199,6 +200,17 @@ def remove(
         help="Skip confirmation prompt",
     ),
 ):
+    """Remove a time tracking session by ID."""
+    if not session_id:
+        print("[red]❌ Session ID is required")
+        raise typer.Exit(code=1)
+    if session_id <= 0:
+        print("[red]❌ Session ID must be a positive integer")
+        raise typer.Exit(code=1)
+    if not isinstance(session_id, int):
+        print("[red]❌ Session ID must be an integer")
+        raise typer.Exit(code=1)
+
     db = SessionLocal()
     try:
         session = db.get(TimeSession, session_id)
@@ -219,6 +231,51 @@ def remove(
     except Exception as e:
         db.rollback()
         print(f"❌ [red]Error deleting session: {e}")
+        raise typer.Exit(code=1)
+    finally:
+        db.close()
+
+
+@app.command()
+def export():
+    """Export all sessions to a CSV file."""
+    db = SessionLocal()
+    try:
+        sessions = db.query(TimeSession).all()
+        if not sessions:
+            print("[yellow]No sessions to export.")
+            return
+
+        filename = f"sessions_{to_local_time(datetime.now(timezone.utc)).date().strftime('%m-%d-%Y')}.csv"
+        with open(filename, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(
+                ["ID", "Project", "Task", "Start Time", "End Time", "Duration"]
+            )
+            for session in sessions:
+                duration_str = (
+                    calculate_duration(
+                        start_time=session.start_time, end_time=session.end_time
+                    )
+                    if session.end_time
+                    else "RUNNING"
+                )
+                writer.writerow(
+                    [
+                        session.id,
+                        session.project,
+                        session.task,
+                        format_datetime(to_local_time(session.start_time)),
+                        format_datetime(to_local_time(session.end_time))
+                        if session.end_time
+                        else "N/A",
+                        duration_str,
+                    ]
+                )
+        print(f"✅ Exported {len(sessions)} sessions to {filename}")
+    except Exception as e:
+        print(f"❌ Error exporting sessions: {e}")
+        db.rollback()
         raise typer.Exit(code=1)
     finally:
         db.close()

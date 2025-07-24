@@ -10,3 +10,4 @@ env/
 # Database
 *.db
 *.sqlite
+.pytest_cache

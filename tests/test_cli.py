@@ -40,3 +40,12 @@ def test_remove_command():
     result = runner.invoke(app, ["remove", "1", "-f"])
     assert result.exit_code == 0
     assert "Deleted session" in result.stdout
+
+
+def test_export_command():
+    runner.invoke(app, ["start", "--project", "ExportTest", "--task", "testing"])
+    result = runner.invoke(app, ["export"])
+    assert result.exit_code == 0
+    assert "Exported" in result.stdout
+    assert "sessions to" in result.stdout
+    runner.invoke(app, ["stop"])
