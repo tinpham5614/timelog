@@ -57,7 +57,7 @@ def start(
         )
         if active_session:
             print(
-                f"[yellow]⚠️  Active session: {active_session.project} - {active_session.task}."
+                f"[yellow]⚠️  An active session already exists: [{active_session.project}] - {active_session.task}"
             )
             if not typer.confirm("Stop it and start a new one?"):
                 db.close()
@@ -74,8 +74,10 @@ def start(
         db.refresh(new_session)
 
         start_display = format_datetime(to_local_time(new_session.start_time))
-        print(f"✅ Started session: [bold]{project} - {task}")
-        print(f"🕒 Start time: {start_display}")
+        print(
+            f"✅ [green]Started session: [bold][{new_session.project}] - {new_session.task}"
+        )
+        print(f"⏱️ Start time: {start_display}")
     except Exception as e:
         print(f"[red]❌ Error starting session: {e}")
         db.rollback()
@@ -110,9 +112,10 @@ def stop():
         start_display = format_datetime(to_local_time(session.start_time))
         end_display = format_datetime(to_local_time(session.end_time))
 
-        print(f"🛑 Stopped session: [bold][{session.project}] - {session.task}")
-        print(f"⏱️ Start time: {start_display} | End time: {end_display}")
-        print(f"⏱️ Duration: [green]{duration_str}")
+        print(f"✅ [green]Stopped session: [bold][{session.project}] - {session.task}")
+        print(f"⏱️ Start time: {start_display}")
+        print(f"⏱️ End time  : {end_display}")
+        print(f"⏱️ Duration : [green]{duration_str}")
     except Exception as e:
         print(f"❌ Error stopping session: {e}")
         db.rollback()
@@ -134,9 +137,15 @@ def current():
             )
             start_display = format_datetime(to_local_time(session.start_time))
 
-            print(f"📖 [bold][{session.project}] - {session.task}")
-            print(f"🕒 Start time: {start_display}")
-            print(f"🕒 Duration : [green]{duration_str}")
+            end_display = (
+                "⏳[green]ACTIVE"
+                if not session.end_time
+                else format_time(to_local_time(session.end_time).time())
+            )
+            print(f"📌 [bold]Current Session: [{session.project}] - {session.task}")
+            print(f"⏱️ Start time: {start_display}")
+            print(f"⏱️ End time  : {end_display}")
+            print(f"⏱️ Duration : [green]{duration_str}")
 
         else:
             print("ℹ️ [yellow] No active session found.")
@@ -162,7 +171,10 @@ def summary():
         if not sessions:
             print("[yellow]No sessions found for today.")
             return
-
+        print("📅 [bold]Today's Sessions:")
+        print(
+            "ID              Start        End     Project         Task                     Duration"
+        )
         for session in sessions:
             duration_str = (
                 "RUNNING"
@@ -180,10 +192,7 @@ def summary():
             )
 
             print(
-                f"{session.id} | "
-                f"{start_display} - {end_display} | "
-                f"[{session.project}] - {session.task} | "
-                f"{duration_str}",
+                f"{session.id:<3} {start_display} - {end_display} {session.project:<10} - {session.task:<30} {duration_str}"
             )
     finally:
         db.close()
