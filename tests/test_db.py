@@ -22,5 +22,4 @@ def test_session_creation():
         deleted = db.query(TimeSession).filter(TimeSession.project == "Test").first()
         assert deleted is None
     finally:
-        db.rollback()
         db.close()
