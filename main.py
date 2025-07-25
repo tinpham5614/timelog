@@ -224,7 +224,7 @@ def summary(
                 else "N/A"
             )
             print(
-                f"{session.id:<3} {start_display} - {end_display} {session.project:<10} - {session.task:<30} {duration_str}"
+                f"{session.id:<3} {session.project}-{session.task:<50} {start_display} → {end_display} {duration_str}"
             )
     except Exception as e:
         print(f"❌ [red]Error fetching sessions: {e}")
@@ -302,12 +302,16 @@ def export(
     db = SessionLocal()
     try:
         if today:
-            start_of_day = datetime.now(timezone.utc).replace(
-                hour=0, minute=0, second=0
+            start_of_day = to_local_time(datetime.now(timezone.utc)).replace(
+                hour=0, minute=0, second=0, microsecond=0
             )
+
+            print(f"📅 [bold]Exporting today's sessions (started after {start_of_day})")
             sessions = (
                 db.query(TimeSession)
-                .filter(TimeSession.start_time >= start_of_day)
+                .filter(
+                    TimeSession.start_time >= start_of_day.replace(tzinfo=timezone.utc)
+                )
                 .all()
             )
         elif week:
