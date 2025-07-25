@@ -1,5 +1,6 @@
 # main.py
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Optional
 
 import typer
@@ -29,6 +30,7 @@ def start(
 ):
     """Start a new time tracking session."""
     # Project selection/validation
+    print("=" * 50)
     if not project:
         print("📁 Available projects:")
         for key, value in PROJECTS.items():
@@ -75,7 +77,7 @@ def start(
 
         start_display = format_datetime(to_local_time(new_session.start_time))
         print(
-            f"✅ [green]Started session: [bold][{new_session.project}] - {new_session.task}"
+            f"✅ [bold]Started session: [bold][{new_session.project}] - {new_session.task}"
         )
         print(f"⏱️ Start time: {start_display}")
     except Exception as e:
@@ -89,6 +91,7 @@ def start(
 @app.command()
 def stop():
     """Stop the currently active time tracking session."""
+    print("=" * 50)
     db = SessionLocal()
     try:
         session = (
@@ -112,7 +115,7 @@ def stop():
         start_display = format_datetime(to_local_time(session.start_time))
         end_display = format_datetime(to_local_time(session.end_time))
 
-        print(f"✅ [green]Stopped session: [bold][{session.project}] - {session.task}")
+        print(f"✅ [bold]Stopped session: [bold][{session.project}] - {session.task}")
         print(f"⏱️ Start time: {start_display}")
         print(f"⏱️ End time  : {end_display}")
         print(f"⏱️ Duration : [green]{duration_str}")
@@ -127,6 +130,7 @@ def stop():
 @app.command()
 def current():
     """Show the current session."""
+    print("=" * 50)
     db = SessionLocal()
     try:
         session = db.query(TimeSession).filter(TimeSession.end_time == None).first()
@@ -158,46 +162,74 @@ def current():
 
 
 @app.command()
-def summary():
-    """Show all sessions."""
+def summary(
+    today: bool = typer.Option(
+        False, "--today", "-t", help="Show today's sessions only"
+    ),
+    week: bool = typer.Option(
+        False, "--week", "-w", help="Show this week's sessions only"
+    ),
+):
+    """
+    Show a summary of all time tracking sessions.
+    Add --today or -t to filter sessions started today.
+    Add --week or -w to filter sessions started this week.
+    """
+    print("=" * 50)
     db = SessionLocal()
 
     try:
-        today_start = to_local_time(datetime.now(tz=timezone.utc))
-        today_utc = datetime.astimezone(today_start, timezone.utc).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-
-        sessions = (
-            db.query(TimeSession).filter(TimeSession.start_time >= today_utc).all()
-        )
+        if today:
+            print("📅 [bold]Today's Sessions Summary (only sessions started today):")
+            start_of_day = datetime.now(timezone.utc).replace(
+                hour=0, minute=0, second=0
+            )
+            sessions = (
+                db.query(TimeSession)
+                .filter(TimeSession.start_time >= start_of_day)
+                .all()
+            )
+        elif week:
+            print(
+                "📅 [bold]This Week's Sessions Summary (only sessions started this week):"
+            )
+            start_of_week = datetime.now(timezone.utc) - timedelta(
+                days=datetime.now(timezone.utc).weekday()
+            )
+            sessions = (
+                db.query(TimeSession)
+                .filter(TimeSession.start_time >= start_of_week)
+                .all()
+            )
+        else:
+            print("📅 [bold]All Sessions Summary:")
+            sessions = db.query(TimeSession).all()
 
         if not sessions:
-            print("[yellow]No sessions found for today.")
+            print("[yellow]No sessions found.")
             return
-        print("📅 [bold]Today's Sessions:")
-        print(
-            "ID              Start        End     Project         Task                     Duration"
-        )
+
         for session in sessions:
             duration_str = (
-                "RUNNING"
-                if not session.end_time
-                else calculate_duration(
+                calculate_duration(
                     start_time=session.start_time, end_time=session.end_time
                 )
+                if session.end_time
+                else "RUNNING"
             )
-
             start_display = format_datetime(to_local_time(session.start_time))
             end_display = (
-                "⏳[green]ACTIVE"
-                if not session.end_time
-                else format_time(to_local_time(session.end_time).time())
+                format_datetime(to_local_time(session.end_time))
+                if session.end_time
+                else "N/A"
             )
-
             print(
                 f"{session.id:<3} {start_display} - {end_display} {session.project:<10} - {session.task:<30} {duration_str}"
             )
+    except Exception as e:
+        print(f"❌ [red]Error fetching sessions: {e}")
+        db.rollback()
+        raise typer.Exit(code=1)
     finally:
         db.close()
 
@@ -224,6 +256,7 @@ def remove(
         print("[red]❌ Session ID must be an integer")
         raise typer.Exit(code=1)
 
+    print("=" * 50)
     db = SessionLocal()
     try:
         session = db.get(TimeSession, session_id)
@@ -238,7 +271,7 @@ def remove(
         ):
             db.delete(session)
             db.commit()
-            print(f"✅ [green]Deleted session {session_id}")
+            print(f"✅ [bold]Deleted session {session_id}")
         else:
             print("🟡 Deletion cancelled")
     except Exception as e:
@@ -250,18 +283,79 @@ def remove(
 
 
 @app.command()
-def export():
+def export(
+    today: bool = typer.Option(
+        False, "--today", "-t", help="Export sessions for today only"
+    ),
+    week: bool = typer.Option(
+        False, "--week", "-w", help="Export sessions for the current week"
+    ),
+    start_date: Optional[str] = typer.Option(
+        None, "--start", "-s", help="Start date in YYYY-MM-DD format"
+    ),
+    end_date: Optional[str] = typer.Option(
+        None, "--end", "-e", help="End date in YYYY-MM-DD format"
+    ),
+):
     """Export all sessions to a CSV file."""
+    print("=" * 50)
     db = SessionLocal()
     try:
-        sessions = db.query(TimeSession).all()
+        if today:
+            start_of_day = datetime.now(timezone.utc).replace(
+                hour=0, minute=0, second=0
+            )
+            sessions = (
+                db.query(TimeSession)
+                .filter(TimeSession.start_time >= start_of_day)
+                .all()
+            )
+        elif week:
+            start_of_week = datetime.now(timezone.utc) - timedelta(
+                days=datetime.now(timezone.utc).weekday()
+            )
+            sessions = (
+                db.query(TimeSession)
+                .filter(TimeSession.start_time >= start_of_week)
+                .all()
+            )
+        elif start_date and end_date:
+            try:
+                start_dt = datetime.strptime(start_date, "%Y-%m-%d").replace(
+                    tzinfo=timezone.utc
+                )
+                end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(
+                    tzinfo=timezone.utc
+                )
+                sessions = (
+                    db.query(TimeSession)
+                    .filter(
+                        TimeSession.start_time >= start_dt,
+                        TimeSession.start_time <= end_dt,
+                    )
+                    .all()
+                )
+            except ValueError:
+                print("[red]❌ Invalid date format. Use YYYY-MM-DD.")
+                raise typer.Exit(code=1)
+        else:
+            # Default to all sessions if no filters are applied
+            sessions = db.query(TimeSession).all()
         if not sessions:
             print("[yellow]No sessions to export.")
             return
 
-        filename = f"sessions_{to_local_time(datetime.now(timezone.utc)).date().strftime('%m-%d-%Y')}.csv"
+        EXPORT_DIR = Path.home() / "Desktop/timelog_exports"
+        EXPORT_DIR.mkdir(exist_ok=True)
+        filename = (
+            EXPORT_DIR
+            / f"sessions_{to_local_time(datetime.now(timezone.utc)).date().strftime('%m-%d-%Y')}.csv"
+        )
         with open(filename, mode="w", newline="") as file:
             writer = csv.writer(file)
+            writer.writerow(
+                ["Exported on", format_datetime(to_local_time(datetime.now()))]
+            )
             writer.writerow(
                 ["ID", "Project", "Task", "Start Time", "End Time", "Duration"]
             )
@@ -285,7 +379,7 @@ def export():
                         duration_str,
                     ]
                 )
-        print(f"✅ Exported {len(sessions)} sessions to {filename}")
+            print(f"✅ [bold]Exported {len(sessions)} sessions to {filename}")
     except Exception as e:
         print(f"❌ Error exporting sessions: {e}")
         db.rollback()
